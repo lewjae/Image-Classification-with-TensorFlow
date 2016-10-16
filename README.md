@@ -8,6 +8,8 @@ Convolutional neural network is applied under TensorFlow framework to classify a
 
 #### Instruction
 To run the program:
+
 First, type  `python importData.py` to import notMNIST dataset from 'http://commondatastorage.googleapis.com/books1000/'
+
 Second, type `python convNet.py` to run ConvNet.
 
