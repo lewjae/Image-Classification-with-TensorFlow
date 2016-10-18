@@ -40,7 +40,6 @@ num_channels = 1 # grayscale
 
 import numpy as np
 
-
 def reformat(dataset, labels):
   dataset = dataset.reshape(
     (-1, image_size, image_size, num_channels)).astype(np.float32)
@@ -81,11 +80,11 @@ with graph.as_default():
   layer1_weights = tf.Variable(tf.truncated_normal([patch_size, patch_size, num_channels, depth], stddev=0.1))
   layer1_biases = tf.Variable(tf.zeros([depth]))
   
-  layer2_weights = tf.Variable(tf.truncated_normal([patch_size, patch_size, depth, depth], stddev=0.1))
-  layer2_biases = tf.Variable(tf.constant(1.0, shape=[depth]))
+  layer2_weights = tf.Variable(tf.truncated_normal([patch_size, patch_size, depth, depth*2], stddev=0.1))
+  layer2_biases = tf.Variable(tf.constant(1.0, shape=[depth*2]))
   
   size3 = ((image_size - patch_size + 1) // 2 - patch_size + 1) // 2
-  layer3_weights = tf.Variable(tf.truncated_normal([size3 * size3 * depth, num_hidden], stddev=0.1))
+  layer3_weights = tf.Variable(tf.truncated_normal([size3 * size3 * depth*2, num_hidden], stddev=0.1))
   layer3_biases = tf.Variable(tf.constant(1.0, shape=[num_hidden]))
   
   layer4_weights = tf.Variable(tf.truncated_normal([num_hidden, num_labels], stddev=0.1))
@@ -94,23 +93,23 @@ with graph.as_default():
   
   # Model.
   def model(data, keep_prob):
-    # C1 input 28 x 28
+    # C1 input 28 x 28x1
     conv1 = tf.nn.conv2d(data, layer1_weights, [1, 1, 1, 1], padding='VALID')
     hidden1 = tf.nn.relu(conv1 + layer1_biases)
     
-    # S2 input 24 x 24
+    # P1 input 24 x 24 x16
     #pool1 = tf.nn.avg_pool(hidden1, [1, 2, 2, 1], [1, 2, 2, 1], padding='VALID')
     pool1 = tf.nn.max_pool(hidden1, [1, 2, 2, 1], [1, 2, 2, 1], padding='VALID')
     
-    # C3 input 12 x 12
+    # C2 input 12x12x16
     conv2 = tf.nn.conv2d(pool1, layer2_weights, [1, 1, 1, 1], padding='VALID')
     hidden2 = tf.nn.relu(conv2 + layer2_biases)
     
-    # S4 input 8 x 8
+    # P2 input 8 x8x32
     #pool2 = tf.nn.avg_pool(hidden2, [1, 2, 2, 1], [1, 2, 2, 1], padding='VALID')
     pool2 = tf.nn.max_pool(hidden2, [1, 2, 2, 1], [1, 2, 2, 1], padding='VALID')
     
-    # F6 input 4 x 4
+    # F6 input 4x4x32
     shape = pool2.get_shape().as_list()
     reshape = tf.reshape(pool2, [shape[0], shape[1] * shape[2] * shape[3]])
     hidden3 = tf.nn.relu(tf.matmul(reshape, layer3_weights) + layer3_biases)
@@ -132,7 +131,7 @@ with graph.as_default():
   valid_prediction = tf.nn.softmax(model(tf_valid_dataset,1.0))
   test_prediction = tf.nn.softmax(model(tf_test_dataset, 1.0))
   
-  num_steps = 40001
+  num_steps = 120001
 
 with tf.Session(graph=graph) as session:
   tf.initialize_all_variables().run()
